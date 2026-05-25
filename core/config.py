@@ -1,9 +1,11 @@
+import logging
 import os
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, field_validator
 
+logger = logging.getLogger("apik.config")
 _config: "Config | None" = None
 _config_base_dir: Path = Path.cwd()
 
@@ -64,10 +66,27 @@ def load_config(path: Path | None = None, overrides: dict | None = None) -> "Con
         _config_base_dir = path.parent
         with open(path) as f:
             data = yaml.safe_load(f) or {}
+        logger.info("config file  : %s", path.resolve())
     else:
         data = {}
+        logger.info("config file  : %s  (not found — using defaults)", path.resolve())
+
+    # Log active APIK_* env overrides
+    active_env = {k: os.environ[k] for k in _ENV_MAP if k in os.environ}
+    if active_env:
+        for key, val in active_env.items():
+            logger.info("env override : %-24s = %s", key, val)
+    else:
+        logger.info("env override : (none)")
 
     data = _apply_env(data)
+
+    # Log CLI overrides
+    if overrides:
+        active_overrides = {k: v for k, v in overrides.items() if v is not None}
+        for key, val in active_overrides.items():
+            logger.info("cli override : %-24s = %s", key, val)
+
     if overrides:
         data.update({k: v for k, v in overrides.items() if v is not None})
     _config = Config(**data)
@@ -83,6 +102,19 @@ def load_config(path: Path | None = None, overrides: dict | None = None) -> "Con
         _config = _config.model_copy(
             update={"tools_dir": (Path.cwd() / "tools").resolve()}
         )
+
+    # Log final resolved configuration
+    logger.info("─" * 48)
+    logger.info("host         : %s", _config.host)
+    logger.info("port         : %s", _config.port)
+    logger.info("workers      : %s", _config.workers)
+    logger.info("reload       : %s", _config.reload)
+    logger.info("tools_dir    : %s", _config.tools_dir)
+    if _config.disabled_tools:
+        logger.info("disabled     : %s", ", ".join(_config.disabled_tools))
+    else:
+        logger.info("disabled     : (none)")
+    logger.info("─" * 48)
 
     return _config
 

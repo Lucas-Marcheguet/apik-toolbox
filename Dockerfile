@@ -21,7 +21,7 @@ COPY core/ ./core/
 RUN uv pip install --system --no-cache .
 
 # Install Node dependencies
-COPY package.json tailwind.config.js ./
+COPY package.json ./
 RUN npm install
 
 # Copy remaining files and build CSS
@@ -40,4 +40,7 @@ RUN mkdir -p /etc/apik && printf '%s\n' \
 
 EXPOSE 8000
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["start"]

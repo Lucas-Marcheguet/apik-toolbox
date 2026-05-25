@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}GAP to Odoo{% endblock %}
+
+{% block navbar_extra %}
+<div class="breadcrumbs text-sm">
+    <ul>
+        <li>
+            <a href="/" class="text-base-content/30">Home</a>
+        </li>
+        <li>
+            <a href="/tools/gap_to_odoo/" class="text-base-content/30">GAP to Odoo</a>
+        </li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto px-6 py-8">
+
+    <!-- Page header -->
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-base-content">GAP to Odoo</h1>
+        <p class="text-xs text-base-content/40 mt-0.5">
+            Upload a GAP Excel file and transform its content to be compatible with Odoo imports.
+        </p>
+    </div>
+
+    <div x-data="fileUpload()">
+        <fieldset class="fieldset">
+            <input type="file"
+                x-on:change="file = $event.target.files[0]"
+                class="file-input w-full max-w-xs" />
+
+            <button
+                x-on:click="submitFile()"
+                x-bind:disabled="!file || loading"
+                class="btn btn-primary mt-2">
+                <span x-show="loading">Chargement...</span>
+                <span x-show="!loading">Télécharger</span>
+            </button>
+        </fieldset>
+
+        <div x-text="message" class="mt-2"></div>
+    </div>
+
+    <script>
+        function fileUpload() {
+            return {
+                file: null,
+                loading: false,
+                message: '',
+                submitFile() {
+                    this.loading = true;
+                    const formData = new FormData();
+                    formData.append('file', this.file);
+
+                    fetch('/tools/gap_to_odoo/upload', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            this.message = '❌ Échec du téléchargement';
+                            return;
+                        }
+                        const disposition = response.headers.get('Content-Disposition') || '';
+                        const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i);
+                        const filename = match ? decodeURIComponent(match[1]) : 'export.xlsx';
+                        return response.blob().then(blob => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = filename;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            this.message = '✅ Fichier prêt';
+                        });
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+                }
+            }
+        }
+    </script>
+
+</div>
+{% endblock %}

@@ -25,8 +25,20 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Cache-first for static assets
   if (url.pathname.startsWith('/static/')) {
+    // Network-first pour le CSS (change à chaque build)
+    if (url.pathname.endsWith('.css')) {
+      event.respondWith(
+        fetch(request).then(response => {
+          const clone = response.clone();
+          caches.open(CACHE).then(cache => cache.put(request, clone));
+          return response;
+        }).catch(() => caches.match(request))
+      );
+      return;
+    }
+
+    // Cache-first pour les vrais assets statiques (JS libs, images)
     event.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(response => {
         const clone = response.clone();
@@ -37,7 +49,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Network-first for everything else (navigation, API)
   event.respondWith(
     fetch(request).catch(() => caches.match(request))
   );

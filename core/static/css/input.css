@@ -1,5 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Explicit sources (in addition to Tailwind v4 auto-detection) */
+@source "../../templates/**/*.html";
+@source "../../../tools/**/*.html";
+@source "../../../tools/**/**/*.html";
+
+@plugin "daisyui" {
+  themes: apik --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "apik";
+  default: true;
+  color-scheme: light;
+
+  --color-primary:          oklch(57.4683% 0.121933 279.655444);
+  --color-primary-content:  oklch(100% 0 0);
+  --color-secondary:        oklch(33.1645% 0.060866 273.80764);
+  --color-secondary-content: oklch(100% 0 0);
+  --color-accent:           oklch(59.9365% 0.124702 281.970014);
+  --color-accent-content:   oklch(100% 0 0);
+  --color-neutral:          oklch(33.1645% 0.060866 273.80764);
+  --color-neutral-content:  oklch(100% 0 0);
+  --color-base-100:         oklch(100% 0 0);
+  --color-base-200:         oklch(97.0237% 0.004134 271.369521);
+  --color-base-300:         oklch(93.7243% 0.008351 271.325306);
+  --color-base-content:     oklch(26.1247% 0.038346 272.761141);
+  --color-info:             oklch(62.3083% 0.188015 259.814527);
+  --color-info-content:     oklch(100% 0 0);
+  --color-success:          oklch(72.2746% 0.192007 149.57933);
+  --color-success-content:  oklch(100% 0 0);
+  --color-warning:          oklch(76.859%  0.164659  70.08039);
+  --color-warning-content:  oklch(100% 0 0);
+  --color-error:            oklch(63.6834% 0.207849  25.331328);
+  --color-error-content:    oklch(100% 0 0);
+
+  --radius-selector: 1.9rem;
+  --radius-field:    0.5rem;
+  --radius-box:      1rem;
+  --border:          1px;
+  --depth:           1;
+  --noise:           0;
+}
 
 [x-cloak] { display: none !important; }

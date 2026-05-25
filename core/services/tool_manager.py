@@ -14,6 +14,7 @@ additional templates / static files as they see fit.
 """
 
 import importlib.util
+import logging
 import shutil
 import subprocess
 import sys
@@ -26,6 +27,8 @@ from fastapi import FastAPI, APIRouter
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jinja2 import ChoiceLoader, FileSystemLoader
+
+logger = logging.getLogger("apik.tools")
 
 PACKAGE_DIR = Path(__file__).parent.parent
 MAIN_TEMPLATES_DIR = PACKAGE_DIR / "templates"
@@ -82,17 +85,20 @@ def _install_dependencies(deps: list[str], slug: str) -> None:
     """Install tool-declared pip dependencies before the tool module is imported."""
     if not deps:
         return
-    print(f"[tool_manager] Installing dependencies for '{slug}': {', '.join(deps)}")
     # Prefer uv (faster); fall back to the current interpreter's pip.
     if shutil.which("uv"):
+        installer = shutil.which("uv")
         cmd = ["uv", "pip", "install", "--quiet", *deps]
     else:
+        installer = sys.executable
         cmd = [sys.executable, "-m", "pip", "install", "--quiet", *deps]
+    logger.info("deps install : [%s] %s  via %s", slug, ", ".join(deps), installer)
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(
             f"Dependency installation failed for tool '{slug}':\n{result.stderr.strip()}"
         )
+    logger.info("deps OK      : [%s]", slug)
 
 
 def _import_tool_module(slug: str, tool_dir: Path) -> types.ModuleType:
@@ -151,30 +157,35 @@ def discover_tools(
 
     Tools whose slug appears in *disabled_slugs* are silently skipped.
     """
+    logger.info("━" * 48)
+    logger.info("tools_dir    : %s", tools_dir)
+
     if not tools_dir.is_dir():
-        print(f"[tool_manager] tools_dir '{tools_dir}' does not exist — skipping.")
+        logger.warning("tools_dir does not exist — no tools loaded")
         return []
 
     disabled_slugs = disabled_slugs or set()
     loaded: list[LoadedTool] = []
+    failed_count = 0
 
-    for tool_dir in sorted(tools_dir.iterdir()):
-        if not tool_dir.is_dir():
-            continue
+    all_dirs = sorted(d for d in tools_dir.iterdir() if d.is_dir())
+    logger.info("candidates   : %d director%s", len(all_dirs), "y" if len(all_dirs) == 1 else "ies")
 
+    for tool_dir in all_dirs:
         missing = [
             name
             for name in ("manifest.yml", "__init__.py", "index.html")
             if not (tool_dir / name).exists()
         ]
         if missing:
+            logger.debug("skip %-16s  missing: %s", tool_dir.name, ", ".join(missing))
             continue  # not a valid tool directory
 
         try:
             manifest = _load_manifest(tool_dir / "manifest.yml", tool_dir)
 
             if manifest.slug in disabled_slugs:
-                print(f"[tool_manager] Skipping disabled tool '{manifest.slug}'")
+                logger.info("disabled     : [%s] %s v%s", manifest.slug, manifest.name, manifest.version)
                 continue
 
             _install_dependencies(manifest.dependencies, manifest.slug)
@@ -188,24 +199,55 @@ def discover_tools(
                     f"``APIRouter`` as ``router`` (got {type(router).__name__})"
                 )
 
+            deps_info = f"  deps: {len(manifest.dependencies)}" if manifest.dependencies else ""
+            logger.info(
+                "loaded       : [%s] %s v%s  →  /tools/%s/  (%s)%s",
+                manifest.slug, manifest.name, manifest.version,
+                manifest.slug, manifest.description, deps_info,
+            )
             loaded.append(LoadedTool(manifest=manifest, router=router, tool_dir=tool_dir))
-            print(f"[tool_manager] Loaded tool '{manifest.name}' at /tools/{manifest.slug}/")
         except Exception as exc:
-            print(f"[tool_manager] Failed to load tool '{tool_dir.name}': {exc}")
+            logger.error("FAILED       : [%s]  %s", tool_dir.name, exc)
+            failed_count += 1
 
+    logger.info("━" * 48)
+    logger.info(
+        "tools        : %d loaded  |  %d disabled  |  %d failed",
+        len(loaded),
+        len([d for d in all_dirs if _slug_of(d) in disabled_slugs]),
+        failed_count,
+    )
+    logger.info("━" * 48)
     return loaded
+
+
+def _slug_of(tool_dir: Path) -> str:
+    """Return the slug for a tool directory, or the dir name if manifest is missing."""
+    manifest_path = tool_dir / "manifest.yml"
+    if not manifest_path.exists():
+        return tool_dir.name
+    try:
+        with open(manifest_path) as f:
+            data = yaml.safe_load(f) or {}
+        return data.get("slug", tool_dir.name)
+    except Exception:
+        return tool_dir.name
 
 
 def register_tools(app: FastAPI, tools: list[LoadedTool]) -> None:
     """Mount every loaded tool's router (and optional static files) onto *app*."""
+    reg_logger = logging.getLogger("apik.tools")
     for tool in tools:
         prefix = f"/tools/{tool.manifest.slug}"
         app.include_router(tool.router, prefix=prefix)
+        reg_logger.info("route        : GET  %s/  →  [%s]", prefix, tool.manifest.slug)
 
         static_dir = tool.tool_dir / "static"
         if static_dir.is_dir():
+            mount_path = f"/static/tools/{tool.manifest.slug}"
             app.mount(
-                f"/static/tools/{tool.manifest.slug}",
+                mount_path,
                 StaticFiles(directory=str(static_dir)),
                 name=f"static_tool_{tool.manifest.slug}",
             )
+            reg_logger.info("static       : %s  →  %s", mount_path, static_dir)
