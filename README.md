@@ -2,7 +2,7 @@
 
 An extensible internal web toolbox built with **FastAPI**, **Jinja2**, **HTMX**, **Alpine.js**, **Tailwind CSS**, and **DaisyUI**.
 
-Tools are self-contained plug-ins dropped into a `tools/` directory — no changes to the core app are needed to add, remove, or update them.
+Tools are self-contained plug-ins dropped into a `tools/` directory — no core changes needed to add, remove, or update them.
 
 ---
 
@@ -10,15 +10,12 @@ Tools are self-contained plug-ins dropped into a `tools/` directory — no chang
 
 - [Stack](#stack)
 - [Project structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Setup](#setup)
-- [Configuration — `apik.yml`](#configuration--apikyml)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
 - [Running](#running)
-- [PWA](#pwa)
-- [Error pages](#error-pages)
+- [Docker](#docker)
 - [Creating a tool](#creating-a-tool)
-- [Disabling tools](#disabling-tools)
-- [Styling](#styling)
+- [PWA & error pages](#pwa--error-pages)
 
 ---
 
@@ -37,322 +34,182 @@ Tools are self-contained plug-ins dropped into a `tools/` directory — no chang
 ## Project structure
 
 ```
-apik.yml             # Runtime configuration (host, port, workers, tools_dir…)
-tools/               # Drop-in tool plug-ins (see "Creating a tool" below)
+apik.yml             # Runtime configuration
+tools/               # Drop-in tool plug-ins
 core/
-├── main.py          # FastAPI app — mounts static files, templates, and tools
-├── cli.py           # Entry points: `dev` and `start`
+├── main.py          # FastAPI app entry point
+├── cli.py           # `dev` and `start` entry points
 ├── config.py        # Pydantic config model + apik.yml loader
-├── routers/         # Core app routers (if needed)
-├── models/          # Pydantic models / DB schemas
 ├── services/
-│   └── tool_manager.py  # Tool discovery, dynamic import, router registration
-├── templates/
-│   ├── base.html    # Shared layout (navbar, PWA tags, theme)
-│   ├── index.html   # Tool launcher dashboard
-│   └── 404.html     # Custom 404 page
+│   └── tool_manager.py  # Tool discovery and router registration
+├── templates/       # base.html, index.html, 404.html
 └── static/
-    ├── css/
-    │   ├── input.css      # Tailwind source — edit this to add custom styles
-    │   └── tailwind.css   # Generated output — do not edit manually
-    ├── img/               # Logo and other images
-    ├── js/                # HTMX and other scripts
-    ├── manifest.json      # PWA web app manifest
-    └── sw.js              # Service worker (cache-first for static assets)
-tailwind.config.js   # Tailwind content paths, DaisyUI theme
-package.json         # Node toolchain (Tailwind CLI + DaisyUI)
-pyproject.toml       # Python dependencies and project scripts
-Dockerfile           # Production image
-compose.yml          # Docker Compose for deployment
+    ├── css/         # input.css (source) → tailwind.css (generated, do not edit)
+    ├── img/
+    ├── js/
+    ├── manifest.json
+    └── sw.js
+tailwind.config.js
+package.json
+pyproject.toml
+Dockerfile
+compose.yml
 ```
 
 ---
 
-## Prerequisites
+## Getting started
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- [Node.js](https://nodejs.org) (for the Tailwind CSS build)
-
-## Setup
+**Requirements:** [uv](https://docs.astral.sh/uv/getting-started/installation/) · [Node.js](https://nodejs.org)
 
 ```bash
-uv sync        # create .venv and install Python dependencies
+uv sync        # create .venv and install Python deps
 npm install    # install Tailwind CLI and DaisyUI
 ```
 
 ---
 
-## Configuration — `apik.yml`
+## Configuration
 
-Place `apik.yml` at the project root (next to `pyproject.toml`). All keys are optional.
+Config is resolved in priority order (highest first):
+
+1. **CLI flags** — e.g. `uv run start --host 0.0.0.0 --workers 4`
+2. **`APIK_*` environment variables**
+3. **`/etc/apik/apik.yml`** — system-level config (Docker default)
+4. **`./apik.yml`** — local project config (dev default)
+5. **Built-in defaults**
+
+All keys are optional:
 
 ```yaml
 host: "127.0.0.1"      # APIK_HOST     — default: 127.0.0.1
 port: 8000              # APIK_PORT     — default: 8000
-workers: 1              # APIK_WORKERS  — default: 1 (ignored in dev/reload mode)
+workers: 1              # APIK_WORKERS  — default: 1 (ignored in reload mode)
 reload: false           # APIK_RELOAD   — default: false
-
-# Directory scanned for tool plug-ins.
-# Relative paths are resolved from this file's location.
-tools_dir: "./tools"    # APIK_TOOLS_DIR
-
-# Comma-separated list of tool slugs to skip at startup.
-# disabled_tools:       # APIK_DISABLED_TOOLS
-#   - example
+tools_dir: "./tools"    # APIK_TOOLS_DIR — relative paths resolved from this file
+disabled_tools:         # APIK_DISABLED_TOOLS (comma-separated in env)
+  - example
 ```
 
-Every key can also be set (or overridden) via the matching `APIK_*` environment
-variable — env vars take precedence over the file. This is the intended mechanism
-for Docker/CI deployments (see `compose.yml`).
-
-The config is loaded once at startup. Restart the server to apply changes.
+The config is loaded once at startup — restart to apply changes.
 
 ---
 
 ## Running
 
-### Development (hot-reload + Tailwind watcher)
-
 ```bash
-uv run dev
+uv run dev    # uvicorn --reload + Tailwind watcher
+uv run start  # production server (reads from config)
 ```
 
-Starts **uvicorn** with `--reload` on the configured host/port, and the **Tailwind
-CSS watcher** in parallel. One command for the full dev loop.
-
-### Production
+CLI flags override config and env vars:
 
 ```bash
-uv run start
+uv run start --host 0.0.0.0 --port 9000 --workers 4 --tools-dir /srv/tools
+uv run start --disabled-tools example,legacy_tool
+uv run dev   --tools-dir ./my-tools
 ```
-
-Uses `workers`, `host`, `port`, and `reload` from `apik.yml` (or `APIK_*` env vars).
 
 ---
 
-## PWA
+## Docker
 
-The app ships as a Progressive Web App out of the box:
+```bash
+docker build -t apik-toolbox .
+docker run -p 8000:8000 apik-toolbox
+```
 
-- **`/manifest.json`** — web app manifest (name, icons, theme colour, standalone display)
-- **`/sw.js`** — service worker registered by `base.html` on `window load`:
-  - Cache-first for all `/static/` assets (CSS, JS, images)
-  - Network-first for navigation and API calls
-  - Old cache versions are pruned on activation
+The image ships with `/etc/apik/apik.yml` pre-configured for containers (`host: 0.0.0.0`, `tools_dir: /app/tools`). Override it in two ways:
 
-To install the app on mobile or desktop, use the browser's "Add to Home Screen" /
-"Install" prompt.
+**Mount a config file:**
+```bash
+docker run -p 8000:8000 \
+  -v $(pwd)/apik.yml:/etc/apik/apik.yml:ro \
+  apik-toolbox
+```
+Use absolute paths for `tools_dir` inside the container (e.g. `/app/tools`).
+
+**Environment variables** (applied after the config file, always win):
+```bash
+docker run -p 9000:9000 -e APIK_PORT=9000 -e APIK_WORKERS=4 apik-toolbox
+```
+
+| Variable | Container default | Description |
+|---|---|---|
+| `APIK_HOST` | `0.0.0.0` | Bind address |
+| `APIK_PORT` | `8000` | Listen port |
+| `APIK_WORKERS` | `1` | Uvicorn worker processes |
+| `APIK_RELOAD` | `false` | Auto-reload |
+| `APIK_TOOLS_DIR` | `/app/tools` | Tools directory |
+| `APIK_DISABLED_TOOLS` | _(empty)_ | Comma-separated slugs to skip |
+
+**Mount a tools directory** (avoids rebuilding the image):
+```bash
+docker run -p 8000:8000 -v $(pwd)/tools:/app/tools:ro apik-toolbox
+```
+
+**Docker Compose:**
+```bash
+docker compose up
+```
+Customise with a `.env` file next to `compose.yml` (`APIK_PORT=9000`, `APIK_WORKERS=4`, …).
 
 ---
 
-## Error pages
+## Creating a tool
 
-Unknown routes return a branded **404** page (`core/templates/404.html`).
-To add handlers for other status codes follow the same pattern in `core/main.py`:
+A tool is a directory inside `tools_dir`:
+
+```
+tools/
+└── my_tool/
+    ├── manifest.yml   ← required: metadata
+    ├── __init__.py    ← required: must expose `router: APIRouter`
+    ├── index.html     ← required: entry-point template
+    ├── views/         ← optional: additional templates
+    └── static/        ← optional: auto-mounted at /static/tools/<slug>/
+```
+
+**`manifest.yml`**
+```yaml
+name: "My Tool"
+slug: "my_tool"           # URL prefix — defaults to directory name
+description: "Does something useful."
+version: "1.0.0"
+```
+
+**`__init__.py`**
+```python
+from pathlib import Path
+from fastapi import APIRouter, Request
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory=str(Path(__file__).parent))
+router = APIRouter()
+
+@router.get("/")
+async def index(request: Request):
+    return templates.TemplateResponse(request, "index.html", {"active_view": "home"})
+```
+
+The tool is mounted at `/tools/<slug>/`. `{% extends "base.html" %}` resolves to the main app's shared layout automatically.
+
+**Sub-routers:** add an `APIRouter(prefix="/api")` into `router` — reachable at `/tools/<slug>/api/…`
+
+**Static files:** place assets in `my_tool/static/`, served at `/static/tools/<slug>/`
+
+**Template lookup:** tool root → `tool/templates/` → `core/templates/` (provides `base.html`, `404.html`, …)
+
+---
+
+## PWA & error pages
+
+The app ships as a PWA: `/manifest.json` and `/sw.js` (cache-first for static assets, network-first for navigation). Install via the browser's "Add to Home Screen" prompt.
+
+Unknown routes return a branded 404 page (`core/templates/404.html`). Add handlers for other status codes in `core/main.py`:
 
 ```python
 @app.exception_handler(500)
 async def server_error(request: Request, _: HTTPException):
     return templates.TemplateResponse(request, "500.html", status_code=500)
 ```
-
----
-
-## Creating a tool
-
-A tool is a directory inside `tools_dir` that satisfies the following contract:
-
-```
-tools/
-└── my_tool/              ← directory name used as default slug
-    ├── manifest.yml      ← required: tool metadata
-    ├── __init__.py       ← required: must expose `router: APIRouter`
-    ├── index.html        ← required: entry-point template
-    ├── views/            ← optional: additional view templates
-    │   └── detail.html
-    └── static/           ← optional: auto-mounted at /static/tools/<slug>/
-        └── ...
-```
-
-### 1. `manifest.yml`
-
-```yaml
-name: "My Tool"
-slug: "my_tool"           # URL prefix: /tools/my_tool/ — defaults to dir name
-description: "Does something useful."
-version: "1.0.0"
-```
-
-### 2. `__init__.py`
-
-Must expose a `router` attribute of type `fastapi.APIRouter`.
-
-```python
-from pathlib import Path
-from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
-
-TOOL_DIR = Path(__file__).parent
-
-# Jinja2Templates is patched at load time so `{% extends "base.html" %}` resolves
-# to the main app's base template automatically.
-templates = Jinja2Templates(directory=str(TOOL_DIR))
-
-router = APIRouter()
-
-
-@router.get("/")
-async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {"active_view": "home"})
-
-
-@router.get("/view/detail")
-async def detail(request: Request):
-    """Allows direct-URL / bookmarked access with the correct tab pre-selected."""
-    return templates.TemplateResponse(request, "index.html", {"active_view": "detail"})
-```
-
-The tool manager mounts this router at `/tools/<slug>/`, so the route above is
-reachable at `GET /tools/my_tool/`.
-
-### 3. `index.html`
-
-The entry point for the tool. Extends `base.html`, owns all navigation between its
-views, and uses **Alpine.js** to switch tabs client-side without a page reload.
-
-The `active_view` context variable (set server-side) initialises Alpine's state so
-direct URL navigation pre-selects the correct tab.
-
-```html
-{% extends "base.html" %}
-
-{% block title %}My Tool — Apik Toolbox{% endblock %}
-
-{# Optional breadcrumb injected into the shared top navbar #}
-{% block navbar_extra %}
-<div class="flex items-center gap-1.5 text-sm ml-2">
-    <span class="text-base-content/30">/</span>
-    <a href="/" class="text-base-content/50 hover:text-base-content">Toolbox</a>
-    <span class="text-base-content/30">/</span>
-    <span class="text-base-content font-medium">My Tool</span>
-</div>
-{% endblock %}
-
-{% block content %}
-<div class="max-w-7xl mx-auto px-6 py-8"
-     x-data="{ tab: '{{ active_view or 'home' }}' }">
-
-    <h1 class="text-xl font-bold text-base-content mb-6">My Tool</h1>
-
-    <!-- Underline tabs — active state driven by Alpine :class binding -->
-    <div class="border-b border-base-300 mb-6">
-        <nav class="flex -mb-px">
-            <button @click="tab = 'home'"
-                    :class="tab === 'home'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-base-content/50 hover:text-base-content hover:border-base-300'"
-                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">
-                Home
-            </button>
-            <button @click="tab = 'detail'"
-                    :class="tab === 'detail'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-base-content/50 hover:text-base-content hover:border-base-300'"
-                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">
-                Detail
-            </button>
-        </nav>
-    </div>
-
-    <!-- Tab panels — all rendered server-side, toggled by Alpine x-show.
-         x-cloak prevents flash before Alpine hydrates (rule in input.css). -->
-    <div x-show="tab === 'home'" x-cloak>
-        {% include "views/home.html" %}
-    </div>
-    <div x-show="tab === 'detail'" x-cloak>
-        {% include "views/detail.html" %}
-    </div>
-
-</div>
-{% endblock %}
-```
-
-### Adding sub-routers
-
-A tool can organise its routes into sub-routers included into its main `router`.
-The tool manager only interacts with `router`, so this is entirely transparent.
-
-```python
-# In __init__.py
-api_router = APIRouter(prefix="/api")
-
-@api_router.get("/items")
-async def list_items():
-    return []
-
-router.include_router(api_router)
-# Reachable at GET /tools/my_tool/api/items
-```
-
-### Static files
-
-Place any static assets (images, JS, CSS) in `my_tool/static/`. They are
-automatically mounted at `/static/tools/my_tool/` when the tool is loaded.
-
-```html
-<img src="/static/tools/my_tool/logo.png">
-```
-
-### Template resolution order
-
-When a tool calls `templates.TemplateResponse(...)`, Jinja2 looks for the template
-in this order:
-
-1. `tools/my_tool/` (tool root)
-2. `tools/my_tool/templates/` (tool templates sub-folder)
-3. `core/templates/` (main app — provides `base.html`, `404.html`, …)
-
-A tool can override any shared template by placing its own copy in its root directory.
-
----
-
-## Disabling tools
-
-Add slug(s) to `disabled_tools` in `apik.yml` to skip them at startup without
-deleting their directory:
-
-```yaml
-disabled_tools:
-  - example
-```
-
-Or via environment variable (comma-separated):
-
-```bash
-APIK_DISABLED_TOOLS=example,legacy_tool uv run start
-```
-
----
-
-## Styling
-
-All styles are centralised in `core/static/css/`:
-
-| File | Purpose |
-|---|---|
-| `input.css` | Tailwind source — edit to add directives or custom rules |
-| `tailwind.css` | Generated output — rebuilt by `npm run css:build` / `css:watch` |
-
-The custom DaisyUI theme (`apik`) provides CSS variables matching the brand palette:
-
-| Token | Usage |
-|---|---|
-| `primary` | brand purple — buttons, active tabs, accents |
-| `secondary` | dark navy — secondary actions |
-| `base-100` | white — card backgrounds |
-| `base-200` | light grey — page background |
-| `base-300` | border grey — dividers, borders |
-| `base-content` | primary text colour |
-
-The `[x-cloak]` rule (`display: none !important`) is included in `input.css` so
-Alpine.js tab panels don't flash before the framework hydrates.
