@@ -22,14 +22,11 @@ templates.env.cache = None
 # Tool discovery
 # ---------------------------------------------------------------------------
 _config = get_config()
-_tools: list[LoadedTool] = []
-
-if _config.tools_dir is not None:
-    _tools = discover_tools(
-        _config.tools_dir,
-        disabled_slugs=set(_config.disabled_tools),
-    )
-    register_tools(app, _tools)
+_tools: list[LoadedTool] = discover_tools(
+    _config.tools_dir,
+    disabled_slugs=set(_config.disabled_tools),
+)
+register_tools(app, _tools)
 
 
 # ---------------------------------------------------------------------------

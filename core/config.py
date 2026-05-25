@@ -78,6 +78,12 @@ def load_config(path: Path | None = None, overrides: dict | None = None) -> "Con
             update={"tools_dir": (_config_base_dir / _config.tools_dir).resolve()}
         )
 
+    # Fall back to ./tools in the working directory when not configured
+    if _config.tools_dir is None:
+        _config = _config.model_copy(
+            update={"tools_dir": (Path.cwd() / "tools").resolve()}
+        )
+
     return _config
 
 
