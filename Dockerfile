@@ -25,25 +25,16 @@ RUN npm install
 COPY . .
 RUN npm run css:build
 
-# ---------------------------------------------------------------------------
-# Runtime configuration — all values can be overridden at `docker run` time
-# with -e APIK_HOST=... or via an env_file / compose environment block.
-# ---------------------------------------------------------------------------
-ARG  APIK_HOST=0.0.0.0
-ARG  APIK_PORT=8000
-ARG  APIK_WORKERS=1
-ARG  APIK_RELOAD=false
-ARG  APIK_TOOLS_DIR=/app/tools
-ARG  APIK_DISABLED_TOOLS=""
+# Create system-level config with Docker-appropriate defaults.
+# All values can still be overridden at runtime via APIK_* environment variables.
+RUN mkdir -p /etc/apik && printf '%s\n' \
+    'host: "0.0.0.0"' \
+    'port: 8000' \
+    'workers: 1' \
+    'reload: false' \
+    'tools_dir: "/app/tools"' \
+    > /etc/apik/apik.yml
 
-ENV  APIK_HOST=${APIK_HOST}
-ENV  APIK_PORT=${APIK_PORT}
-ENV  APIK_WORKERS=${APIK_WORKERS}
-ENV  APIK_RELOAD=${APIK_RELOAD}
-ENV  APIK_TOOLS_DIR=${APIK_TOOLS_DIR}
-ENV  APIK_DISABLED_TOOLS=${APIK_DISABLED_TOOLS}
+EXPOSE 8000
 
-EXPOSE ${APIK_PORT}
-
-CMD ["sh", "-c", \
-     "uvicorn src.main:app --host $APIK_HOST --port $APIK_PORT --workers $APIK_WORKERS"]
+CMD ["start"]

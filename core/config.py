@@ -51,11 +51,14 @@ def _apply_env(data: dict) -> dict:
     return data
 
 
-def load_config(path: Path | None = None) -> "Config":
+_SYSTEM_CONFIG = Path("/etc/apik/apik.yml")
+
+
+def load_config(path: Path | None = None, overrides: dict | None = None) -> "Config":
     global _config, _config_base_dir
 
     if path is None:
-        path = Path.cwd() / "apik.yml"
+        path = _SYSTEM_CONFIG if _SYSTEM_CONFIG.exists() else Path.cwd() / "apik.yml"
 
     if path.exists():
         _config_base_dir = path.parent
@@ -65,6 +68,8 @@ def load_config(path: Path | None = None) -> "Config":
         data = {}
 
     data = _apply_env(data)
+    if overrides:
+        data.update({k: v for k, v in overrides.items() if v is not None})
     _config = Config(**data)
 
     # Resolve relative tools_dir against the config file location
