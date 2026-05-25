@@ -14,9 +14,11 @@ additional templates / static files as they see fit.
 """
 
 import importlib.util
+import shutil
+import subprocess
 import sys
 import types
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
@@ -39,6 +41,7 @@ class ToolManifest:
     slug: str
     description: str
     version: str
+    dependencies: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -64,12 +67,32 @@ def _ensure_namespace() -> None:
 def _load_manifest(manifest_path: Path, tool_dir: Path) -> ToolManifest:
     with open(manifest_path) as f:
         data = yaml.safe_load(f) or {}
+    raw_deps = data.get("dependencies", [])
+    deps = [raw_deps] if isinstance(raw_deps, str) else list(raw_deps)
     return ToolManifest(
         name=data.get("name", tool_dir.name),
         slug=data.get("slug", tool_dir.name),
         description=data.get("description", ""),
         version=data.get("version", "0.1.0"),
+        dependencies=deps,
     )
+
+
+def _install_dependencies(deps: list[str], slug: str) -> None:
+    """Install tool-declared pip dependencies before the tool module is imported."""
+    if not deps:
+        return
+    print(f"[tool_manager] Installing dependencies for '{slug}': {', '.join(deps)}")
+    # Prefer uv (faster); fall back to the current interpreter's pip.
+    if shutil.which("uv"):
+        cmd = ["uv", "pip", "install", "--quiet", *deps]
+    else:
+        cmd = [sys.executable, "-m", "pip", "install", "--quiet", *deps]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Dependency installation failed for tool '{slug}':\n{result.stderr.strip()}"
+        )
 
 
 def _import_tool_module(slug: str, tool_dir: Path) -> types.ModuleType:
@@ -154,6 +177,7 @@ def discover_tools(
                 print(f"[tool_manager] Skipping disabled tool '{manifest.slug}'")
                 continue
 
+            _install_dependencies(manifest.dependencies, manifest.slug)
             module = _import_tool_module(manifest.slug, tool_dir)
             _patch_templates(module, tool_dir)
 

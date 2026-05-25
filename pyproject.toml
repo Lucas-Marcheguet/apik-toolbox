@@ -12,12 +12,47 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    # Web framework
     "fastapi",
     "uvicorn[standard]",
     "jinja2",
     "python-multipart",
     "pyyaml",
     "pydantic",
+
+    # Data wrangling
+    "pandas",
+    "openpyxl",       # Excel read/write (.xlsx) for pandas
+    "xlrd",           # Legacy Excel read (.xls) for pandas
+    "pyarrow",        # Parquet / Feather / Arrow support for pandas
+
+    # Numerics & science
+    "numpy",
+    "scipy",
+    "sympy",          # Symbolic mathematics
+
+    # Visualisation (server-side chart rendering)
+    "matplotlib",
+    "seaborn",
+    "plotly",
+
+    # Machine learning
+    "scikit-learn",
+
+    # HTTP / web scraping
+    "httpx",          # Async HTTP client
+    "beautifulsoup4", # HTML parsing
+    "lxml",           # Fast XML/HTML parser (bs4 backend)
+
+    # Database
+    "sqlalchemy",
+    "aiosqlite",      # Async SQLite driver for SQLAlchemy
+
+    # Utilities
+    "python-dateutil",
+    "pytz",
+    "humanize",       # Human-readable numbers, dates, file sizes
+    "rich",           # Terminal formatting (useful in tool scripts)
 ]
 
 [project.scripts]

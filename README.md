@@ -176,6 +176,9 @@ name: "My Tool"
 slug: "my_tool"           # URL prefix — defaults to directory name
 description: "Does something useful."
 version: "1.0.0"
+dependencies:             # optional — installed at startup if missing
+  - "requests>=2.28"
+  - "some-package==1.2.3"
 ```
 
 **`__init__.py`**

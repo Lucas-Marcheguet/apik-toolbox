@@ -1,21 +1,24 @@
-FROM python:3.12-alpine
+FROM python:3.12-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
 # System dependencies
-RUN apk add --no-cache \
-    build-base \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     libffi-dev \
-    openssl-dev \
-    python3-dev \
-    cargo \
+    libssl-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    curl \
     nodejs \
-    npm
+    npm \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY pyproject.toml README.md ./
 COPY core/ ./core/
-RUN pip install --no-cache-dir .
+RUN uv pip install --system --no-cache .
 
 # Install Node dependencies
 COPY package.json tailwind.config.js ./
