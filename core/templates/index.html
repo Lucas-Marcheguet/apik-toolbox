@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10">
+
+    {% if tools %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {% for tool in tools %}
+        <a href="/tools/{{ tool.slug }}/"
+           class="group bg-base-100 border border-base-300 rounded-xl p-5 flex flex-col gap-3
+                  hover:border-primary hover:shadow-md transition-all duration-150">
+            <!-- Icon + version -->
+            <div class="flex items-start justify-between">
+                <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center
+                            text-primary font-bold text-base select-none">
+                    {{ tool.name[0] | upper }}
+                </div>
+                <span class="text-[10px] font-mono text-base-content/30 mt-1">v{{ tool.version }}</span>
+            </div>
+            <!-- Name + description -->
+            <div>
+                <h2 class="font-semibold text-sm text-base-content">{{ tool.name }}</h2>
+                {% if tool.description %}
+                <p class="text-xs text-base-content/50 mt-0.5 line-clamp-2">{{ tool.description }}</p>
+                {% endif %}
+            </div>
+            <!-- Hover CTA -->
+            <div class="mt-auto text-primary text-xs font-medium flex items-center gap-1
+                        opacity-0 group-hover:opacity-100 transition-opacity">
+                Open &rarr;
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-32 text-center">
+        <div class="w-14 h-14 rounded-2xl bg-base-300 flex items-center justify-center text-2xl mb-5">
+            🧰
+        </div>
+        <h2 class="text-base font-semibold text-base-content">No tools loaded</h2>
+        <p class="text-sm text-base-content/50 mt-2 max-w-xs">
+            Set a
+            <code class="text-xs bg-base-300 px-1.5 py-0.5 rounded font-mono">tools_dir</code>
+            in
+            <code class="text-xs bg-base-300 px-1.5 py-0.5 rounded font-mono">apik.yml</code>
+            and add at least one valid tool directory.
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

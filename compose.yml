@@ -2,5 +2,11 @@ services:
   backend:
     build: .
     ports:
-      - "8000:8000"
- 
+      - "${APIK_PORT:-8000}:${APIK_PORT:-8000}"
+    environment:
+      APIK_HOST:           ${APIK_HOST:-0.0.0.0}
+      APIK_PORT:           ${APIK_PORT:-8000}
+      APIK_WORKERS:        ${APIK_WORKERS:-1}
+      APIK_RELOAD:         ${APIK_RELOAD:-false}
+      APIK_TOOLS_DIR:      ${APIK_TOOLS_DIR:-/app/tools}
+      APIK_DISABLED_TOOLS: ${APIK_DISABLED_TOOLS:-}

@@ -1,0 +1,4 @@
+name: "Example Tool"
+slug: "example"
+description: "A starter tool showing the apik-toolbox tool contract."
+version: "0.1.0"

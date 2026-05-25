@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Example Tool — Apik Toolbox{% endblock %}
+
+{# Breadcrumb injected into the shared navbar #}
+{% block navbar_extra %}
+<div class="flex items-center gap-1.5 text-sm ml-2">
+    <span class="text-base-content/30">/</span>
+    <a href="/" class="text-base-content/50 hover:text-base-content transition-colors">Toolbox</a>
+    <span class="text-base-content/30">/</span>
+    <span class="text-base-content font-medium">Example Tool</span>
+</div>
+{% endblock %}
+
+{% block content %}
+{# active_view is set server-side; Alpine reads it to restore the correct tab
+   on direct URL navigation (e.g. bookmarked /tools/example/view/second). #}
+<div class="max-w-7xl mx-auto px-6 py-8"
+     x-data="{ tab: '{{ active_view or 'home' }}' }">
+
+    <!-- Page header -->
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-base-content">Example Tool</h1>
+        <p class="text-xs text-base-content/40 mt-0.5">
+            A starter tool demonstrating the apik-toolbox plugin contract.
+        </p>
+    </div>
+
+    <!-- Underline tab navigation — active state driven by Alpine :class binding -->
+    <div class="border-b border-base-300 mb-6">
+        <nav class="flex -mb-px">
+            <button @click="tab = 'home'"
+                    :class="tab === 'home'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-base-content/50 hover:text-base-content hover:border-base-300'"
+                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">
+                Home
+            </button>
+            <button @click="tab = 'second'"
+                    :class="tab === 'second'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-base-content/50 hover:text-base-content hover:border-base-300'"
+                    class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">
+                Second View
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab panels — all rendered server-side, toggled by Alpine x-show -->
+    <div x-show="tab === 'home'" x-cloak>
+        {% include "views/home.html" %}
+    </div>
+    <div x-show="tab === 'second'" x-cloak>
+        {% include "views/second.html" %}
+    </div>
+
+</div>
+{% endblock %}

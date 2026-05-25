@@ -1,0 +1,12 @@
+<div class="bg-base-100 border border-base-300 rounded-xl p-6">
+    <h2 class="text-sm font-semibold text-base-content mb-3">Welcome</h2>
+    <p class="text-sm text-base-content/60 mb-4">This is the home view of the example tool.</p>
+    <div class="flex items-center gap-3">
+        <button class="btn btn-sm btn-primary"
+                hx-get="/tools/example/api/hello"
+                hx-target="#api-result">
+            Call /api/hello
+        </button>
+        <span id="api-result" class="font-mono text-xs text-base-content/50"></span>
+    </div>
+</div>

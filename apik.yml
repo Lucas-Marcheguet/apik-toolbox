@@ -1,0 +1,17 @@
+# apik-toolbox configuration
+# All settings are optional; the values below are the defaults.
+# Every key can also be set via the APIK_* environment variable
+# (env vars take precedence over this file).
+
+host: "127.0.0.1"      # APIK_HOST
+port: 8000              # APIK_PORT
+workers: 1              # APIK_WORKERS
+reload: false           # APIK_RELOAD
+
+# Directory that will be scanned for tools.
+# Relative paths are resolved from this file's location.
+tools_dir: "./tools"    # APIK_TOOLS_DIR
+
+# Comma-separated list of tool slugs to skip at startup.
+# disabled_tools:       # APIK_DISABLED_TOOLS
+#   - example
