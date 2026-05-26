@@ -1,4 +1,4 @@
 name: "GAP to Odoo"
 slug: "gap_to_odoo"
-description: "Upload an Excel file, edit its contents in-browser, and export it back as xlsx."
+description: "A tool to convert GAP Excel files into a format compatible with Odoo imports."
 version: "0.1.0"

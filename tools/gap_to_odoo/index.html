@@ -16,32 +16,41 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-full mx-auto px-6 py-8">
+<div class="min-w-[1/2] flex items-center justify-center px-6 py-8">
+    <div class="w-full max-w-md">
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-body">
+                <!-- Page header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-base-content">GAP to Odoo</h1>
+                    <p class="text-sm text-base-content/60 mt-2">
+                        Upload a GAP Excel file and transform its content to be compatible with Odoo imports.
+                    </p>
+                </div>
 
-    <!-- Page header -->
-    <div class="mb-6">
-        <h1 class="text-xl font-bold text-base-content">GAP to Odoo</h1>
-        <p class="text-xs text-base-content/40 mt-0.5">
-            Upload a GAP Excel file and transform its content to be compatible with Odoo imports.
-        </p>
-    </div>
+                <div x-data="fileUpload()">
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text font-medium">Select Excel File</span>
+                        </label>
+                        <input type="file"
+                            x-on:change="file = $event.target.files[0]"
+                            class="file-input file-input-bordered w-full" />
+                    </div>
 
-    <div x-data="fileUpload()">
-        <fieldset class="fieldset">
-            <input type="file"
-                x-on:change="file = $event.target.files[0]"
-                class="file-input w-full max-w-xs" />
+                    <button
+                        x-on:click="submitFile()"
+                        x-bind:disabled="!file || loading"
+                        class="btn btn-primary w-full mt-6">
+                        <span x-show="loading" class="loading loading-spinner"></span>
+                        <span x-show="loading">Chargement...</span>
+                        <span x-show="!loading">Télécharger</span>
+                    </button>
 
-            <button
-                x-on:click="submitFile()"
-                x-bind:disabled="!file || loading"
-                class="btn btn-primary mt-2">
-                <span x-show="loading">Chargement...</span>
-                <span x-show="!loading">Télécharger</span>
-            </button>
-        </fieldset>
-
-        <div x-text="message" class="mt-2"></div>
+                    <div x-show="message" x-text="message" class="alert mt-4" :class="message.includes('✅') ? 'alert-success' : 'alert-error'"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
