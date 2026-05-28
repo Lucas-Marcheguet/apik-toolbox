@@ -36,7 +36,17 @@ router = APIRouter()
 @router.get("/")
 async def index(request: Request):
     logger.info("Rendering index page")
-    return templates.TemplateResponse(request, "index.html", {"request": request})
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "request": request,
+            "breadcrumbs": [
+                {"label": "Home", "url": "/"},
+                {"label": "GAP to Odoo", "url": "/tools/gap_to_odoo/"},
+            ],
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -15,3 +15,15 @@ tools_dir: "./tools"    # APIK_TOOLS_DIR
 # Comma-separated list of tool slugs to skip at startup.
 # disabled_tools:       # APIK_DISABLED_TOOLS
 #   - example
+
+# PostgreSQL connection URL.  Omit (or leave blank) to run without a database.
+# Format: postgres://<user>:<password>@<host>:<port>/<database>
+database_url: "postgres://apik:apik@localhost:5432/apik"   # APIK_DATABASE_URL
+
+# Set to true to auto-create tables on startup (dev only — use Aerich in prod).
+# database_generate_schemas: false  # APIK_DATABASE_GENERATE_SCHEMAS
+
+# GitHub OAuth — register an OAuth App at https://github.com/settings/developers
+# Set the callback URL to: http://<your-host>/auth/github/callback
+github_client_id: "Iv23linamrwIkwVfEaxk"      # APIK_GITHUB_CLIENT_ID
+github_client_secret: "9f0f89290e90f2016e6ac06bccbc9ef499501f6d"  # APIK_GITHUB_CLIENT_SECRET

@@ -11,12 +11,16 @@ _config_base_dir: Path = Path.cwd()
 
 # APIK_* environment variables override any value from apik.yml.
 _ENV_MAP: dict[str, str] = {
-    "APIK_HOST":           "host",
-    "APIK_PORT":           "port",
-    "APIK_WORKERS":        "workers",
-    "APIK_RELOAD":         "reload",
-    "APIK_TOOLS_DIR":      "tools_dir",
-    "APIK_DISABLED_TOOLS": "disabled_tools",
+    "APIK_HOST":                      "host",
+    "APIK_PORT":                      "port",
+    "APIK_WORKERS":                   "workers",
+    "APIK_RELOAD":                    "reload",
+    "APIK_TOOLS_DIR":                 "tools_dir",
+    "APIK_DISABLED_TOOLS":            "disabled_tools",
+    "APIK_DATABASE_URL":              "database_url",
+    "APIK_DATABASE_GENERATE_SCHEMAS": "database_generate_schemas",
+    "APIK_GITHUB_CLIENT_ID":          "github_client_id",
+    "APIK_GITHUB_CLIENT_SECRET":      "github_client_secret",
 }
 
 
@@ -27,6 +31,10 @@ class Config(BaseModel):
     reload: bool = False
     tools_dir: Path | None = None
     disabled_tools: list[str] = []
+    database_url: str | None = None
+    database_generate_schemas: bool = False
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
 
     @field_validator("tools_dir", mode="before")
     @classmethod
@@ -114,6 +122,14 @@ def load_config(path: Path | None = None, overrides: dict | None = None) -> "Con
         logger.info("disabled     : %s", ", ".join(_config.disabled_tools))
     else:
         logger.info("disabled     : (none)")
+    if _config.database_url:
+        # Mask password in logs: postgres://user:PASS@host/db → postgres://user:***@host/db
+        import re
+        masked = re.sub(r"(://[^:]+:)[^@]+(@)", r"\1***\2", _config.database_url)
+        logger.info("database     : %s", masked)
+        logger.info("gen_schemas  : %s", _config.database_generate_schemas)
+    else:
+        logger.info("database     : (not configured)")
     logger.info("─" * 48)
 
     return _config

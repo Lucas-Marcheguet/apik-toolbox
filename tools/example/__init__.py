@@ -34,7 +34,18 @@ router.include_router(api_router)
 
 @router.get("/")
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {"active_view": "home"})
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "active_view": "home",
+            "request": request,
+            "breadcrumbs": [
+                {"label": "Home", "url": "/"},
+                {"label": "Example Tool", "url": "/tools/example/"},
+            ],
+        },
+    )
 
 
 @router.get("/view/second")

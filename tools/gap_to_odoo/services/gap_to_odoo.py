@@ -84,17 +84,10 @@ def gap_to_odoo(df: pd.DataFrame) -> pd.DataFrame:
         if total_hours == 0 and not (is_light or is_mvp or is_full):
             continue
         # Determine type_id.name based on development hours
-        type_id_name = "Development" if dev_valid else "Fonctionnel"
+        type_id_name = "Développement" if dev_valid else "Fonctionnel"
         
         # Build tag_ids.name list
         tags = []
-        if is_light and not is_mvp and not is_full:
-            tags.append("Light")
-        if is_mvp and not is_full:
-            tags.append("MVP")
-        if is_full:
-            tags.append("Full")
-        
         choice_val = ret_choice_str(row.get("Choix"))
         if choice_val:
             tags.append(choice_val)

@@ -1,12 +1,24 @@
 services:
-  backend:
-    build: .
-    ports:
-      - "${APIK_PORT:-8000}:${APIK_PORT:-8000}"
+  # backend:
+  #   build: .
+  #   ports:
+  #     - "${APIK_PORT:-8000}:${APIK_PORT:-8000}"
+  #   environment:
+  #     APIK_HOST:                      ${APIK_HOST:-0.0.0.0}
+  #     APIK_PORT:                      ${APIK_PORT:-8000}
+  #     APIK_WORKERS:                   ${APIK_WORKERS:-1}
+  #     APIK_RELOAD:                    ${APIK_RELOAD:-false}
+  #     APIK_TOOLS_DIR:                 ${APIK_TOOLS_DIR:-/app/tools}
+  #     APIK_DISABLED_TOOLS:            ${APIK_DISABLED_TOOLS:-}
+  #     APIK_DATABASE_URL:              ${APIK_DATABASE_URL:-postgres://apik:apik@postgres:5432/apik}
+  #     APIK_DATABASE_GENERATE_SCHEMAS: ${APIK_DATABASE_GENERATE_SCHEMAS:-false}
+  #   depends_on:
+  #     - postgres
+  postgres:
+    image: postgres:16
     environment:
-      APIK_HOST:           ${APIK_HOST:-0.0.0.0}
-      APIK_PORT:           ${APIK_PORT:-8000}
-      APIK_WORKERS:        ${APIK_WORKERS:-1}
-      APIK_RELOAD:         ${APIK_RELOAD:-false}
-      APIK_TOOLS_DIR:      ${APIK_TOOLS_DIR:-/app/tools}
-      APIK_DISABLED_TOOLS: ${APIK_DISABLED_TOOLS:-}
+      POSTGRES_USER: ${POSTGRES_USER:-apik}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apik}
+      POSTGRES_DB: ${POSTGRES_DB:-apik}
+    ports:
+      - "5432:5432"

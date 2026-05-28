@@ -2,16 +2,6 @@
 
 {% block title %}Example Tool — Apik Toolbox{% endblock %}
 
-{# Breadcrumb injected into the shared navbar #}
-{% block navbar_extra %}
-<div class="flex items-center gap-1.5 text-sm ml-2">
-    <span class="text-base-content/30">/</span>
-    <a href="/" class="text-base-content/50 hover:text-base-content transition-colors">Toolbox</a>
-    <span class="text-base-content/30">/</span>
-    <span class="text-base-content font-medium">Example Tool</span>
-</div>
-{% endblock %}
-
 {% block content %}
 {# active_view is set server-side; Alpine reads it to restore the correct tab
    on direct URL navigation (e.g. bookmarked /tools/example/view/second). #}

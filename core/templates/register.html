@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-base-200" x-data="{ loading: false }">
+    <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h1 class="card-title text-2xl justify-center mb-6">Create account</h1>
+            <form method="post" action="/register" @submit="loading = true">
+                {% if error %}
+                    <div class="alert alert-error mb-4">
+                        <span>{{ error }}</span>
+                    </div>
+                {% endif %}
+                <div class="form-control w-full mb-4">
+                    <label class="label" for="username">
+                        <span class="label-text">Username</span>
+                    </label>
+                    <input type="text" id="username" name="username" class="input input-bordered w-full" required>
+                </div>
+                <div class="form-control w-full mb-4">
+                    <label class="label" for="email">
+                        <span class="label-text">Email</span>
+                    </label>
+                    <input type="email" id="email" name="email" class="input input-bordered w-full" required>
+                </div>
+                <div class="form-control w-full mb-6">
+                    <label class="label" for="password">
+                        <span class="label-text">Password</span>
+                    </label>
+                    <input type="password" id="password" name="password" class="input input-bordered w-full" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+                    <span x-show="!loading">Create account</span>
+                    <span x-show="loading" class="loading loading-spinner"></span>
+                </button>
+            </form>
+            <div class="divider my-4"></div>
+            <p class="text-center">Already have an account? <a href="/login" class="link link-primary">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

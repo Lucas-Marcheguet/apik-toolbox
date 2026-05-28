@@ -33,7 +33,25 @@
                     Apik Toolbox
                 </span>
             </a>
-            {% block navbar_extra %}{% endblock %}
+            {% block navbar_extra %}
+            {% if breadcrumbs %}
+            <div class="breadcrumbs text-sm">
+                <ul>
+                    {% for crumb in breadcrumbs %}
+                    <li><a href="{{ crumb.url }}" class="text-base-content/30">{{ crumb.label }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% endblock %}
+            <div class="ml-auto flex items-center gap-2">
+                {% if request.state.user %}
+                <span class="text-sm text-base-content/50">{{ request.state.user.username }}</span>
+                <a href="/logout" class="btn btn-ghost btn-sm">Logout</a>
+                {% else %}
+                <a href="/login" class="btn btn-ghost btn-sm">Login</a>
+                {% endif %}
+            </div>
         </div>
     </header>
 
