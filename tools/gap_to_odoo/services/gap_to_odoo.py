@@ -4,7 +4,7 @@ import pandas as pd
 HOURS_PER_DAY = 7.0
 EXCEL_COLUMN_NAMES = ["Flux", "Sujet", "Light", "MVP", "Full", "Choix", "Description précise fonctionnelle", "Ateliers / Paramétrage", "Coordination / Modélisation", "Développement"]
 ODOO_COLUMN_NAMES = ["type_id.name", "allocated_hours", "name", "flux", "subject", "tag_ids.name"]
-EXCLUDED_CHOICES = ["N/A", "NA", "DROP", "Drop", "drop", "na", "n/a"]
+EXCLUDED_CHOICES = ["N/A", "NA", "DROP", "Drop", "drop", "na", "n/a", "", " "]
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +89,10 @@ def gap_to_odoo(df: pd.DataFrame) -> pd.DataFrame:
         # Build tag_ids.name list
         tags = []
         choice_val = ret_choice_str(row.get("Choix"))
-        if choice_val:
+        if choice_val and choice_val not in EXCLUDED_CHOICES:
             tags.append(choice_val)
+        elif choice_val in EXCLUDED_CHOICES:
+            continue
         
         # Build transformed row
         transformed_row = {
